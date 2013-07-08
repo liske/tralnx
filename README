@@ -1,0 +1,18 @@
+tralnx
+======
+
+About
+-----
+tralnx is a traccar client for GNU/Linux. It uses gpsd(8) to retrieve and 
+send the current GPS location to a traccar server instance.
+
+
+Installation
+------------
+
+The following perl modules are required:
+
+Log::Dispatch
+Net::GPSD3
+Proc::Daemon
+Proc::PID::File

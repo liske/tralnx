@@ -1,0 +1,121 @@
+#!/usr/bin/perl
+
+# tralnx - Traccar Linux Client
+#
+# Authors:
+#   Thomas Liske <thomas@fiasko-nw.net>
+#
+# Copyright Holder:
+#   2013 (C) Thomas Liske <thomas@fiasko-nw.net>
+#
+# License:
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this package; if not, write to the Free Software
+#   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
+use Config;
+use File::Basename;
+use Getopt::Std;
+use Log::Dispatch;
+use Log::Dispatch::Screen;
+use Log::Dispatch::Syslog;
+use Log::Dispatch::File;
+use Net::GPSD3;
+use POSIX qw(strftime);
+use Proc::Daemon;
+use Proc::PID::File;
+
+use strict;
+use warnings;
+
+$0 = 'tralnxd';
+
+use constant {
+    TRALNX_VERSION => '0.1',
+};
+
+my $logfmt = sub { my %p = @_; chomp($p{'message'}); return ("[$p{level}] $p{message}\n"); };
+my $logffile = sub { my %p = @_;  return (scalar localtime())." [$$] $p{message}"; };
+my $logger = Log::Dispatch->new(callbacks => $logfmt);
+
+my $daemonize;
+END {
+    $logger->notice('terminated') if(defined($logger) && !defined($daemonize));
+}
+
+$logger->add(
+    Log::Dispatch::Screen->new(
+	name => 'console',
+	min_level => 'notice',
+    )
+);
+
+sub mydie($) {
+    $logger->critical(shift);
+    exit 1;
+}
+
+our $opt_c = '/etc/tralnx.conf';
+our $opt_f;
+getopts('fc:');
+mydie("Could not read config file '$opt_c'.") unless(-r $opt_c);
+$logger->info("config file: '$opt_c'");
+
+my %tralnx_conf;
+my %gpsd_conf;
+my %traccar_conf;
+eval `cat "$opt_c"`;
+
+# enable log to file
+if(exists($traccar_conf{'logfile'})) {
+    $logger->add(
+	Log::Dispatch::File->new(
+	    name => 'logfile',
+	    min_level => 'info',
+	    filename => $traccar_conf{'logfile'},
+	    close_after_write => '1',
+	    callbacks => $logffile,
+	)
+    );
+}
+# fallback to syslog
+else {
+    $logger->add(
+	Log::Dispatch::Syslog->new(
+	    name => 'syslog',
+	    min_level => 'info',
+	    ident => 'tralnxd',
+	    logopt => 'pid',
+	    facility => 'daemon',
+	)
+    );
+}
+
+$logger->info('tralnxd '.TRALNX_VERSION);
+
+sub gpsdData() {
+    my $data = shift;
+
+    if($data->class eq 'TPV') {
+    }
+    elsif($data->class eq 'VERSION') {
+	$logger->info("gpsd: %s", $data->release);
+    }
+}
+
+while(1) {
+    my $gpsd = Net::GPSD3->new(%gpsd_conf);
+    $gpsd->addHandler(\&gpsdData);
+    $gpsd->watch;
+}
