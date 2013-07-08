@@ -27,6 +27,7 @@
 use Config;
 use File::Basename;
 use Getopt::Std;
+use IO::Socket::INET;
 use Log::Dispatch;
 use Log::Dispatch::Screen;
 use Log::Dispatch::Syslog;
@@ -103,6 +104,11 @@ else {
 }
 
 $logger->info('tralnxd '.TRALNX_VERSION);
+
+my $socket = new IO::Socket::INET(
+		PeerAddr => join(':', $traccar_conf{'host'}, $traccar_conf{'port'}),
+		Proto => 'udp',
+) or mydie("failed to create socket: $!");
 
 sub gpsdData() {
     my $data = shift;
