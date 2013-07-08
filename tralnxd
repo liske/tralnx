@@ -42,6 +42,8 @@ use warnings;
 
 $0 = 'tralnxd';
 
+$|++;
+
 use constant {
     TRALNX_VERSION => '0.1',
 };
@@ -129,6 +131,8 @@ sub gpsdData() {
 	    4,		# mask flag
 	    $mask,	# mask
 	) . $send;
+
+	$socket->send($send);
     }
     elsif($data->class eq 'VERSION') {
 	$logger->info("gpsd: %s", $data->release);
