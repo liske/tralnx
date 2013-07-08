@@ -114,6 +114,21 @@ sub gpsdData() {
     my $data = shift;
 
     if($data->class eq 'TPV') {
+	my $send;
+	my $mask = 0;
+
+	$mask += 1 << 0;	# REQUIRED
+
+	$mask += 1 << 2;	# ID
+	$send .= pack('a22', $traccar_conf{'devid'});
+
+	$send = pack('SCCCL',
+	    5,		# API
+	    2,		# command type
+	    1,		# message type
+	    4,		# mask flag
+	    $mask,	# mask
+	) . $send;
     }
     elsif($data->class eq 'VERSION') {
 	$logger->info("gpsd: %s", $data->release);
