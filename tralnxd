@@ -121,8 +121,25 @@ sub gpsdData() {
 
 	$mask += 1 << 0;	# REQUIRED
 
-	$mask += 1 << 2;	# ID
+	# Device ID
+	$mask += 1 << 2;
 	$send .= pack('a22', $traccar_conf{'devid'});
+
+	# Date
+	my $dt = $data->datetime;
+	$mask += 1 << 8;
+	$send .= pack('CCC',
+	    $dt->day,
+	    $dt->month,
+	    $dt->year - 2000);
+
+
+	# Time
+	$mask += 1 << 14;
+	$send .= pack('CCC',
+	    $dt->hour,
+	    $dt->minute,
+	    $dt->second);
 
 	$send = pack('SCCCL',
 	    5,		# API
