@@ -142,5 +142,9 @@ sub gpsdData() {
 while(1) {
     my $gpsd = Net::GPSD3->new(%gpsd_conf);
     $gpsd->addHandler(\&gpsdData);
-    $gpsd->watch;
+
+    eval { $gpsd->watch; };
+
+    $logger->notice("gpsd connection terminated, sleeping for 60s...");
+    sleep 60;
 }
