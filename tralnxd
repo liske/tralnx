@@ -121,8 +121,9 @@ my $lpoint = undef;
 
 sub deg2int($) {
     my $deg = shift;
+    my $ideg = int($deg);
 
-    return $deg * 1000000;
+    return int($ideg * 1000000 + ($deg - $ideg) * 600000);
 }
 
 sub gpsdData() {
