@@ -201,7 +201,7 @@ sub gpsdData() {
 	$satellites = $data->used;
     }
     elsif($data->class eq 'VERSION') {
-	$logger->info("gpsd: %s", $data->release);
+	$logger->info('gpsd: ', $data->release);
     }
 }
 
