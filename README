@@ -16,3 +16,16 @@ Log::Dispatch
 Net::GPSD3
 Proc::Daemon
 Proc::PID::File
+
+Net::GPSD3 uses GPS::Point. tralnxd uses the GPS::Point method to
+calculate distances - you need the following addtional pacakges:
+
+Geo::Inverse
+Geo::Constants
+Geo::Ellipsoids
+Geo::Functions
+
+On Debian those libs are not package, you need to fetch them from CPAN[1]
+yourself.
+
+[1] http://search.cpan.org/~mrdvt/

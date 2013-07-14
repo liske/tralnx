@@ -27,6 +27,7 @@
 use Config;
 use File::Basename;
 use Getopt::Std;
+use Geo::Inverse;
 use IO::Socket::INET;
 use Log::Dispatch;
 use Log::Dispatch::Screen;
@@ -78,6 +79,9 @@ $logger->info("config file: '$opt_c'");
 my %tralnx_conf;
 my %gpsd_conf;
 my %traccar_conf;
+$tralnx_conf{interval} = 5;
+$tralnx_conf{mindist} = 10;
+
 eval `cat "$opt_c"`;
 
 # enable log to file
@@ -111,11 +115,28 @@ my $socket = new IO::Socket::INET(
 		PeerAddr => join(':', $traccar_conf{'host'}, $traccar_conf{'port'}),
 		Proto => 'udp',
 ) or mydie("failed to create socket: $!");
+my $satellites = 0;
+my $last = 0;
+my $lpoint = undef;
+
+sub deg2int($) {
+    my $deg = shift;
+
+    return $deg * 1000000;
+}
 
 sub gpsdData() {
     my $data = shift;
 
     if($data->class eq 'TPV') {
+	my $now = time();
+
+	# send interval
+	return if($last + $tralnx_conf{interval} > $now || (defined($lpoint) && $lpoint->distance($data->point) < $tralnx_conf{mindist}));
+	$last = $now;
+	$lpoint = $data->point;
+
+	# build message
 	my $send;
 	my $mask = 0;
 
@@ -123,33 +144,60 @@ sub gpsdData() {
 
 	# Device ID
 	$mask += 1 << 2;
-	$send .= pack('a22', $traccar_conf{'devid'});
+	$send .= pack('(a22)>', $traccar_conf{'devid'});
 
 	# Date
 	my $dt = $data->datetime;
 	$mask += 1 << 8;
-	$send .= pack('CCC',
+	$send .= pack('(CCC)>',
 	    $dt->day,
 	    $dt->month,
 	    $dt->year - 2000);
 
+	# GPS status
+	$mask += 1 << 9;
+	$send .= pack('(C)>', $data->mode >= 2);
+
+	# Latitude
+	$mask += 1 << 10;
+	$send .= pack('(L)>', deg2int($data->lat));
+
+	# Longitude
+	$mask += 1 << 11;
+	$send .= pack('(L)>', deg2int($data->lon));
+
+	# Speed
+	$mask += 1 << 12;
+	$send .= pack('(S)>', int($data->speed * 10));
+
+	# Course
+	$mask += 1 << 13;
+	$send .= pack('(S)>', int($data->track * 10));
 
 	# Time
 	$mask += 1 << 14;
-	$send .= pack('CCC',
+	$send .= pack('(CCC)>',
 	    $dt->hour,
 	    $dt->minute,
 	    $dt->second);
 
-	$send = pack('SCCCL',
+	# GPS status
+	$mask += 1 << 16;
+	$send .= pack('(C)>', $satellites);
+
+
+	$send = pack('(SCCCL)>',
 	    5,		# API
 	    2,		# command type
-	    1,		# message type
+	    16,		# message type
 	    4,		# mask flag
 	    $mask,	# mask
 	) . $send;
 
 	$socket->send($send);
+    }
+    elsif($data->class eq 'SKY') {
+	$satellites = $data->used;
     }
     elsif($data->class eq 'VERSION') {
 	$logger->info("gpsd: %s", $data->release);
