@@ -80,6 +80,7 @@ my %tralnx_conf;
 my %gpsd_conf;
 my %traccar_conf;
 $tralnx_conf{interval} = 5;
+$tralnx_conf{maxinterval} = 60;
 $tralnx_conf{mindist} = 10;
 
 eval `cat "$opt_c"`;
@@ -133,7 +134,9 @@ sub gpsdData() {
 	my $now = time();
 
 	# send interval
-	return if($last + $tralnx_conf{interval} > $now || (defined($lpoint) && $lpoint->distance($data->point) < $tralnx_conf{mindist}));
+	if($last + $tralnx_conf{maxinterval} > $now) {
+	    return if($last + $tralnx_conf{interval} > $now || (defined($lpoint) && $lpoint->distance($data->point) < $tralnx_conf{mindist}))
+	}
 	$last = $now;
 	$lpoint = $data->point;
 
