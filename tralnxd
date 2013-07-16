@@ -160,20 +160,28 @@ sub gpsdData() {
 	$send .= pack('(C)>', $data->mode >= 2);
 
 	# Latitude
-	$mask += 1 << 10;
-	$send .= pack('(L)>', deg2int($data->lat));
+	if(defined($data->lat)) {
+	    $mask += 1 << 10;
+	    $send .= pack('(L)>', deg2int($data->lat));
+	}
 
 	# Longitude
-	$mask += 1 << 11;
-	$send .= pack('(L)>', deg2int($data->lon));
+	if(defined($data->lon)) {
+	    $mask += 1 << 11;
+	    $send .= pack('(L)>', deg2int($data->lon));
+	}
 
 	# Speed
-	$mask += 1 << 12;
-	$send .= pack('(S)>', int($data->speed * 10));
+	if(defined($data->speed)) {
+	    $mask += 1 << 12;
+	    $send .= pack('(S)>', int($data->speed * 10));
+	}
 
 	# Course
-	$mask += 1 << 13;
-	$send .= pack('(S)>', int($data->track * 10));
+	if(defined($data->track)) {
+	    $mask += 1 << 13;
+	    $send .= pack('(S)>', int($data->track * 10));
+	}
 
 	# Time
 	$mask += 1 << 14;
