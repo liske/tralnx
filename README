@@ -31,7 +31,7 @@ Geo::Constants
 Geo::Ellipsoids
 Geo::Functions
 
-On Debian those libs are not package, you need to fetch them from CPAN[2]
-yourself.
+On Debian those libs are not packaged, you need to fetch them from CPAN[2]
+by yourself.
 
 [2] http://search.cpan.org/~mrdvt/
