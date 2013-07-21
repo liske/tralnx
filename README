@@ -4,7 +4,13 @@ tralnx
 About
 -----
 tralnx is a traccar client for GNU/Linux. It uses gpsd(8) to retrieve and 
-send the current GPS location to a traccar server instance.
+send the current GPS location to a traccar[1] server instance.
+
+[1] http://www.traccar.org/
+
+tralnx rudimentary implements parts of the Skypatrol protocol (only the
+required stuff to get it working with traccar). The protocol uses the
+udp port 5021.
 
 
 Installation
@@ -25,7 +31,7 @@ Geo::Constants
 Geo::Ellipsoids
 Geo::Functions
 
-On Debian those libs are not package, you need to fetch them from CPAN[1]
+On Debian those libs are not package, you need to fetch them from CPAN[2]
 yourself.
 
-[1] http://search.cpan.org/~mrdvt/
+[2] http://search.cpan.org/~mrdvt/
