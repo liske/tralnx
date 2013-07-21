@@ -24,7 +24,7 @@ Proc::Daemon
 Proc::PID::File
 
 Net::GPSD3 uses GPS::Point. tralnxd uses the GPS::Point method to
-calculate distances - you need the following addtional pacakges:
+calculate distances - you need the following addtional packages:
 
 Geo::Inverse
 Geo::Constants
