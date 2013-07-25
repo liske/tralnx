@@ -28,13 +28,14 @@ use Config;
 use File::Basename;
 use Getopt::Std;
 use Geo::Inverse;
+use IO::Handle;
 use IO::Socket::INET;
 use Log::Dispatch;
 use Log::Dispatch::Screen;
 use Log::Dispatch::Syslog;
 use Log::Dispatch::File;
 use Net::GPSD3;
-use POSIX qw(strftime);
+use POSIX qw(strftime mkfifo);
 use Proc::Daemon;
 use Proc::PID::File;
 
@@ -82,6 +83,7 @@ my %traccar_conf;
 $tralnx_conf{interval} = 5;
 $tralnx_conf{maxinterval} = 60;
 $tralnx_conf{mindist} = 10;
+$tralnx_conf{pospipefmt} = '@{[$lpoint->lat]} @{[$lpoint->lon]}';
 
 eval `cat "$opt_c"`;
 
@@ -112,13 +114,55 @@ else {
 
 $logger->info('tralnxd '.TRALNX_VERSION);
 
+my $lpoint = undef;
+
+if(exists($tralnx_conf{pospipe})) {
+    my ($child, $parent);
+
+    pipe $child, $parent or mydie("pipe() failed: $!");
+    my $pid = fork();
+    mydie("fork() failed: $!") unless defined $pid;
+    if ($pid) {
+	close $child;
+
+	$SIG{USR2} = sub {
+	    $logger->info("got SIGUSR2");
+	    my $data;
+	    eval "\$data = \"$tralnx_conf{pospipefmt}\";";
+	    chomp($data);
+
+	    print $parent "$data\n";
+	    $parent->flush();
+	};
+    }
+    else {
+	$0 .= '.pospipe';
+	close $parent;
+
+	unless(-p $tralnx_conf{pospipe}) {
+	    unlink($tralnx_conf{pospipe});
+	    mkfifo($tralnx_conf{pospipe}, 0770) or mydie("mkfifo() failed: $!");
+	}
+
+	while(1) {
+	    open(FIFO, '>', $tralnx_conf{pospipe}) || mydie("open() failed: $!");
+	    kill(12, getppid());
+	    my $data = <$child>;
+	    print FIFO $data;
+	    close(FIFO);
+	    sleep 1;
+	}
+
+	exit;
+    }
+}
+
 my $socket = new IO::Socket::INET(
 		PeerAddr => join(':', $traccar_conf{'host'}, $traccar_conf{'port'}),
 		Proto => 'udp',
 ) or mydie("failed to create socket: $!");
 my $satellites = 0;
 my $last = 0;
-my $lpoint = undef;
 
 sub deg2int($) {
     my $deg = shift;
