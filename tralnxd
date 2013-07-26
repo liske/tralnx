@@ -83,7 +83,7 @@ my %traccar_conf;
 $tralnx_conf{interval} = 5;
 $tralnx_conf{maxinterval} = 60;
 $tralnx_conf{mindist} = 10;
-$tralnx_conf{pospipefmt} = '@{[$lpoint->lat]} @{[$lpoint->lon]}';
+$tralnx_conf{pospipefmt} = 'sprintf("%f°%s, %f°%s" . (defined($lpoint->alt) ? ", %.1fm" : ""), $lpoint->lat, ($lpoint->lat < 0 ? "S" : "N"), $lpoint->lon, ($lpoint->lon < 0 ? "W" : "O"), $lpoint->alt)';
 
 eval `cat "$opt_c"`;
 
@@ -128,8 +128,14 @@ if(exists($tralnx_conf{pospipe})) {
 	$SIG{USR2} = sub {
 	    $logger->info("got SIGUSR2");
 	    my $data;
-	    eval "\$data = \"$tralnx_conf{pospipefmt}\";";
-	    chomp($data);
+	    eval "\$data = $tralnx_conf{pospipefmt};";
+	    if($@) {
+		$logger->warning("eval('\$data = $tralnx_conf{pospipefmt};') failed: $@");
+		$data = '';
+	    }
+	    else {
+		chomp($data);
+	    }
 
 	    print $parent "$data\n";
 	    $parent->flush();
