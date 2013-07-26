@@ -83,7 +83,7 @@ my %traccar_conf;
 $tralnx_conf{interval} = 5;
 $tralnx_conf{maxinterval} = 60;
 $tralnx_conf{mindist} = 10;
-$tralnx_conf{pospipefmt} = 'sprintf("%f°%s, %f°%s" . (defined($lpoint->alt) ? ", %.1fm" : ""), $lpoint->lat, ($lpoint->lat < 0 ? "S" : "N"), $lpoint->lon, ($lpoint->lon < 0 ? "W" : "O"), $lpoint->alt)';
+$tralnx_conf{pospipefmt} = '(defined($lpoint) ? sprintf("%f°%s, %f°%s" . (defined($lpoint->alt) ? ", %.1fm" : ""), $lpoint->lat, ($lpoint->lat < 0 ? "S" : "N"), $lpoint->lon, ($lpoint->lon < 0 ? "W" : "O"), $lpoint->alt) : "")';
 
 eval `cat "$opt_c"`;
 
