@@ -272,6 +272,6 @@ while(1) {
 
     eval { $gpsd->watch; };
 
-    $logger->notice("gpsd connection terminated, sleeping for 60s...");
+    $logger->notice("gpsd connection terminated ('$@'), sleeping for 60s...");
     sleep 60;
 }
