@@ -201,12 +201,15 @@ sub gpsdData() {
 	$send .= pack('(a22)>', $traccar_conf{'devid'});
 
 	# Date
-	my $dt = $data->datetime;
-	$mask += 1 << 8;
-	$send .= pack('(CCC)>',
-	    $dt->day,
-	    $dt->month,
-	    $dt->year - 2000);
+	my $dt;
+	if(defined($data->timestamp) || defined($data->time)) {
+	    $dt = $data->datetime;
+	    $mask += 1 << 8;
+	    $send .= pack('(CCC)>',
+		$dt->day,
+		$dt->month,
+		$dt->year - 2000);
+	}
 
 	# GPS status
 	$mask += 1 << 9;
@@ -237,11 +240,13 @@ sub gpsdData() {
 	}
 
 	# Time
-	$mask += 1 << 14;
-	$send .= pack('(CCC)>',
-	    $dt->hour,
-	    $dt->minute,
-	    $dt->second);
+	if(defined($dt)) {
+	    $mask += 1 << 14;
+	    $send .= pack('(CCC)>',
+		$dt->hour,
+		$dt->minute,
+		$dt->second);
+	}
 
 	# GPS status
 	$mask += 1 << 16;
